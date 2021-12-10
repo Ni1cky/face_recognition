@@ -13,6 +13,8 @@ import face_recognition
 
 def except_hook(cls, ex, traceback):
     sys.__excepthook__(cls, ex, traceback)
+    if os.path.exists("temp.jpg"):
+        os.remove("temp.jpg")
 
 
 sys.excepthook = except_hook
@@ -22,10 +24,10 @@ def load_all_photos():
     global all_photos
     height = 0
     while len(all_photos) != person_photos_count:
-        driver.execute_cript(f"window.scrollTo(0, {1080 * height}")
-        all_photos = driver.find_elements_by_class_name("photos row ")
+        driver.execute_script(f"window.scrollTo(0, {1080 * height})")
+        all_photos = driver.find_elements(by=By.CLASS_NAME, value="photos_row ")
         height += 1
-    driver.execute_cript("window.scrollTo(0, 0)")
+    driver.execute_script("window.scrollTo(0, 0)")
 
 
 def save_parced_pic(photo_link: str):
@@ -47,7 +49,7 @@ def find_and_save_faces(person_photos_path, ind):
         pic = face_recognition.load_image_file("temp.jpg")
     except PIL.UnidentifiedImageError as ex:
         print(f"Картинка - кака; Ошибка: {ex}")
-        os.remove("tmp.jpg")
+        os.remove("temp.jpg")
         return ind
 
     for face in face_recognition.face_locations(pic, model="hog"):
@@ -55,8 +57,8 @@ def find_and_save_faces(person_photos_path, ind):
         the_face = pic[top:bottom, left:right]
 
         the_face = Image.fromarray(the_face)
-        the_face.save("tmp.jpg")
-        the_face = face_recognition.load_image_file("tmp.jpg")
+        the_face.save("temp.jpg")
+        the_face = face_recognition.load_image_file("temp.jpg")
 
         face_encoding = face_recognition.face_encodings(the_face)
         if len(face_encoding) > 0:
@@ -68,7 +70,7 @@ def find_and_save_faces(person_photos_path, ind):
             ind += 1
             global faces_parced
             faces_parced += 1
-    os.remove("tmp.jpg")
+    os.remove("temp.jpg")
     return ind
 
 
@@ -77,7 +79,7 @@ only_for_authorized = list()
 photos_parced = 0
 faces_parced = 0
 
-driver = webdriver.Firefox()
+driver = webdriver.Firefox(executable_path="geckodriver-v0.30.0-linux64/geckodriver")
 driver.maximize_window()
 wait = WebDriverWait(driver, 20)
 
@@ -87,10 +89,10 @@ for person_id in range(1, max_iteration + 1):
     person_url = f"https://vk.com/photos{person_id}"
     print(f"#{person_id} id'шник пошёл.")
     driver.get(person_url)
-    all_photos = driver.find_elements_by_class_name("photos_row ")
+    all_photos = driver.find_elements(by=By.CLASS_NAME, value="photos_row ")
     if len(all_photos) == 0:
         try:
-            label = driver.find_element_by_class_name("profile_deleted_text").text
+            label = driver.find_element(by=By.CLASS_NAME, value="profile_deleted_text").text
             if label == "Страница доступна только авторизованным пользователям.":
                 only_for_authorized.append(person_url)
                 print("-Только для авторизованных...\n")
@@ -100,11 +102,13 @@ for person_id in range(1, max_iteration + 1):
             continue
         print("-Мёртвый...\n")
         continue
-    person_photos_count = int(driver.find_element_by_class_name("ui_crumb_count").text.replace(" ", ""))
+    person_photos_count = int(driver.find_element(by=By.CLASS_NAME, value="ui_crumb_count").text.replace(" ", ""))
     print(f"Всего фоток: {[person_photos_count]}")
     load_all_photos()
 
-    directory_for_saves = f"saved/{driver.find_element_by_class_name('ui_crumb').text}_id{person_id}"
+    directory_for_saves = f"saved/{driver.find_element(by=By.CLASS_NAME, value='ui_crumb').text}_id{person_id}"
+    if not os.path.exists("saved/"):
+        os.mkdir("saved/")
     if not os.path.exists(directory_for_saves):
         os.mkdir(directory_for_saves)
     person_faces_count = 0
@@ -121,7 +125,7 @@ for person_id in range(1, max_iteration + 1):
         Но это пока не работает, надо допилить
 
         try:
-            wait.until(EC.element_to_be_clickable((By.ID, "pv_author_name")))
+            wait.until(ec.element_to_be_clickable((By.ID, "pv_author_name")))
         except selenium.common.exceptions.TimeoutException:
             os.remove(directory_for_saves)
             person_id -= 1
@@ -132,14 +136,14 @@ for person_id in range(1, max_iteration + 1):
             driver.maximize_window()
             wait = WebDriverWait(driver, 10)
             continue'''
-        photo = driver.find_element_by_id("pv_photo")
+        wait.until(ec.element_to_be_clickable((By.ID, "pv_author_name")))
+        photo = driver.find_element(by=By.ID, value="pv_photo")
         link = photo.find_element_by_tag_name("img").get_attribute("src")
 
         photos_parced += 1
         save_parced_pic(link)
         person_faces_count = find_and_save_faces(directory_for_saves, person_faces_count)
-        # print(f"Обработано {photo_index + 1} из {person_photos_count}.......")
-        driver.find_element_by_class_name("pv_close_btn").click()
+        driver.find_element(by=By.CLASS_NAME, value="pv_close_btn").click()
     file_with_link = open(f"{directory_for_saves}/link.txt", "w")
     file_with_link.write(f"https://vk.com/id{person_id}")
     file_with_link.close()
