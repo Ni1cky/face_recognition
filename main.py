@@ -9,6 +9,7 @@ from selenium.webdriver.common.by import By
 from time import sleep
 import os
 import face_recognition
+import selenium.common.exceptions
 
 
 def except_hook(cls, ex, traceback):
@@ -44,6 +45,11 @@ def save_parced_pic(photo_link: str):
     pic_file.close()
 
 
+def save_progress(pers_id=None, photo_ind=None):
+    with open("last_saved.txt", "w") as save_file:
+        save_file.write(f"id: {pers_id if pers_id else person_id}\nphoto index: {photo_ind if photo_ind else photo_index}")
+
+
 def find_and_save_faces(person_photos_path, ind):
     try:
         pic = face_recognition.load_image_file("temp.jpg")
@@ -71,7 +77,17 @@ def find_and_save_faces(person_photos_path, ind):
             global faces_parced
             faces_parced += 1
     os.remove("temp.jpg")
+    save_progress()
     return ind
+
+
+last_saved_person_id = -1
+last_saved_photo_index = -1
+if os.path.exists("last_saved.txt"):
+    save_file = open("last_saved.txt", "r")
+    lines = save_file.readlines()
+    last_saved_person_id = lines[0].split()[1]
+    last_saved_photo_index = lines[0].split()[1]
 
 
 max_iteration = 666
@@ -84,8 +100,10 @@ driver.maximize_window()
 wait = WebDriverWait(driver, 20)
 
 for person_id in range(1, max_iteration + 1):
+    if person_id <= last_saved_person_id:
+        continue
     if person_id % 10 == 0:
-        sleep(10)
+        sleep(20)
     person_url = f"https://vk.com/photos{person_id}"
     print(f"#{person_id} id'шник пошёл.")
     driver.get(person_url)
@@ -114,29 +132,29 @@ for person_id in range(1, max_iteration + 1):
     person_faces_count = 0
 
     for photo_index in range(person_photos_count):
+        if photo_index <= last_saved_photo_index:
+            continue
         if photo_index % 100 == 0:
             print(f"{photo_index} фотографий обработано....")
-            sleep(10)
+            sleep(20)
         wait.until(ec.element_to_be_clickable((By.CLASS_NAME, "TopHomeLink")))
         all_photos[photo_index].click()
-        '''
-        Мега-параша на случай, если вообще всё сломается.
-        Тупа перезапускаем браузер.
-        Но это пока не работает, надо допилить
-
         try:
             wait.until(ec.element_to_be_clickable((By.ID, "pv_author_name")))
         except selenium.common.exceptions.TimeoutException:
-            os.remove(directory_for_saves)
-            person_id -= 1
+            # os.remove(directory_for_saves)
+            # person_id -= 1
             driver.quit()
             driver.close()
 
-            driver = webdriver.Firefox()
+            driver = webdriver.Firefox(executable_path="geckodriver-v0.30.0-linux64/geckodriver")
             driver.maximize_window()
-            wait = WebDriverWait(driver, 10)
-            continue'''
-        wait.until(ec.element_to_be_clickable((By.ID, "pv_author_name")))
+            wait = WebDriverWait(driver, 20)
+            driver.get(person_url)
+            load_all_photos()
+            photo_index -= 1
+            continue
+        # wait.until(ec.element_to_be_clickable((By.ID, "pv_author_name")))
         photo = driver.find_element(by=By.ID, value="pv_photo")
         link = photo.find_element_by_tag_name("img").get_attribute("src")
 
