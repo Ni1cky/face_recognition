@@ -86,8 +86,8 @@ last_saved_photo_index = -1
 if os.path.exists("last_saved.txt"):
     save_file = open("last_saved.txt", "r")
     lines = save_file.readlines()
-    last_saved_person_id = lines[0].split()[1]
-    last_saved_photo_index = lines[0].split()[1]
+    last_saved_person_id = int(lines[0].split()[1])
+    last_saved_photo_index = int(lines[0].split()[1])
 
 
 max_iteration = 666
