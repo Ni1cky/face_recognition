@@ -102,7 +102,7 @@ for person_id in range(1, max_iteration + 1):
             continue
         print("-Мёртвый...\n")
         continue
-    person_photos_count = int(driver.find_element(by=By.CLASS_NAME, value="ui_crumb_count").text.replace(" ", ""))
+    person_photos_count = int(driver.find_element(by=By.CLASS_NAME, value="ui_crumb_count").text.replace(" ", "").replace(",", ""))
     print(f"Всего фоток: {[person_photos_count]}")
     load_all_photos()
 
