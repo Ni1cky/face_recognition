@@ -77,7 +77,7 @@ only_for_authorized = list()
 photos_parced = 0
 faces_parced = 0
 
-driver = webdriver.Firefox("/home/nick/PycharmProjects/FaceRecognition/geckodriver-v0.30.0-linux64/geckodriver")
+driver = webdriver.Firefox()
 driver.maximize_window()
 wait = WebDriverWait(driver, 20)
 
