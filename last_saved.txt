@@ -1,2 +1,2 @@
-id: 8
-photo index: 22
+id: -1
+photo_index: -1

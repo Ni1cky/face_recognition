@@ -9,7 +9,6 @@ from selenium.webdriver.common.by import By
 from time import sleep
 import os
 import face_recognition
-import selenium.common.exceptions
 
 
 def except_hook(cls, ex, traceback):
@@ -46,8 +45,8 @@ def save_parced_pic(photo_link: str):
 
 
 def save_progress(pers_id=None, photo_ind=None):
-    with open("last_saved.txt", "w") as save_file:
-        save_file.write(f"id: {pers_id if pers_id else person_id}\nphoto index: {photo_ind if photo_ind else photo_index}")
+    with open("last_saved.txt", "w") as progress_file:
+        progress_file.write(f"id: {pers_id if pers_id else person_id}\nphoto_index: {photo_ind if photo_ind else photo_index}")
 
 
 def find_and_save_faces(person_photos_path, ind):
@@ -81,13 +80,29 @@ def find_and_save_faces(person_photos_path, ind):
     return ind
 
 
+def reload():
+    global driver
+    print("_______\nПерезапускаемся...")
+    driver.close()
+    print("Закрылся первый браузер.")
+    driver.quit()
+    print("Вышли.")
+    print("Пытаемся открыть новый...")
+    driver = webdriver.Firefox(executable_path="geckodriver-v0.30.0-linux64/geckodriver")
+    print("Открыто!")
+    driver.maximize_window()
+    global wait
+    wait = WebDriverWait(driver, 20)
+    print("Продолжаем работу...\n_______")
+
+
 last_saved_person_id = -1
 last_saved_photo_index = -1
 if os.path.exists("last_saved.txt"):
     save_file = open("last_saved.txt", "r")
     lines = save_file.readlines()
     last_saved_person_id = int(lines[0].split()[1])
-    last_saved_photo_index = int(lines[0].split()[1])
+    last_saved_photo_index = int(lines[1].split()[1])
 
 
 max_iteration = 666
@@ -100,10 +115,10 @@ driver.maximize_window()
 wait = WebDriverWait(driver, 20)
 
 for person_id in range(1, max_iteration + 1):
-    if person_id <= last_saved_person_id:
+    if person_id < last_saved_person_id:
         continue
     if person_id % 10 == 0:
-        sleep(20)
+        reload()
     person_url = f"https://vk.com/photos{person_id}"
     print(f"#{person_id} id'шник пошёл.")
     driver.get(person_url)
@@ -114,11 +129,14 @@ for person_id in range(1, max_iteration + 1):
             if label == "Страница доступна только авторизованным пользователям.":
                 only_for_authorized.append(person_url)
                 print("-Только для авторизованных...\n")
+                print("_" * 33)
                 continue
         except:
             print("-Мёртвый...\n")
+            print("_" * 33)
             continue
         print("-Мёртвый...\n")
+        print("_" * 33)
         continue
     person_photos_count = int(driver.find_element(by=By.CLASS_NAME, value="ui_crumb_count").text.replace(" ", "").replace(",", ""))
     print(f"Всего фоток: {[person_photos_count]}")
@@ -136,23 +154,21 @@ for person_id in range(1, max_iteration + 1):
             continue
         if photo_index % 100 == 0:
             print(f"{photo_index} фотографий обработано....")
-            sleep(20)
+            reload()
+            driver.get(person_url)
+            load_all_photos()
         wait.until(ec.element_to_be_clickable((By.CLASS_NAME, "TopHomeLink")))
         all_photos[photo_index].click()
         try:
             wait.until(ec.element_to_be_clickable((By.ID, "pv_author_name")))
-        except selenium.common.exceptions.TimeoutException:
+        except:
             # os.remove(directory_for_saves)
             # person_id -= 1
-            driver.quit()
-            driver.close()
-
-            driver = webdriver.Firefox(executable_path="geckodriver-v0.30.0-linux64/geckodriver")
-            driver.maximize_window()
-            wait = WebDriverWait(driver, 20)
+            reload()
             driver.get(person_url)
             load_all_photos()
             photo_index -= 1
+            print("Всё путём!")
             continue
         # wait.until(ec.element_to_be_clickable((By.ID, "pv_author_name")))
         photo = driver.find_element(by=By.ID, value="pv_photo")
@@ -161,7 +177,9 @@ for person_id in range(1, max_iteration + 1):
         photos_parced += 1
         save_parced_pic(link)
         person_faces_count = find_and_save_faces(directory_for_saves, person_faces_count)
-        driver.find_element(by=By.CLASS_NAME, value="pv_close_btn").click()
+        close_btn = driver.find_element(by=By.CLASS_NAME, value="pv_close_btn")
+        close_btn.click()
+        # driver.find_element(by=By.CLASS_NAME, value="pv_close_btn").click()
     file_with_link = open(f"{directory_for_saves}/link.txt", "w")
     file_with_link.write(f"https://vk.com/id{person_id}")
     file_with_link.close()
