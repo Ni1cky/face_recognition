@@ -1,2 +1,2 @@
-id: -1
-photo_index: -1
+id: 17
+photo_index: 2080

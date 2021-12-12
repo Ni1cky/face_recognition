@@ -90,18 +90,12 @@ def save_logs(pers_id=None, photos_count=None, saved_photos_count=None):
 
 def reload():
     global driver
-    # print("_______\nПерезапускаемся...")
     driver.close()
-    # print("Закрылся первый браузер.")
     driver.quit()
-    # print("Вышли.")
-    # print("Пытаемся открыть новый...")
     driver = webdriver.Firefox(executable_path="geckodriver-v0.30.0-linux64/geckodriver")
-    # print("Открыто!")
     driver.maximize_window()
     global wait
     wait = WebDriverWait(driver, 20)
-    # print("Продолжаем работу...\n_______")
 
 
 def get_saved_photos_count():
@@ -162,9 +156,10 @@ for person_id in range(1, max_iteration + 1):
     if not os.path.exists(directory_for_saves):
         os.mkdir(directory_for_saves)
     person_faces_count = 0
-
+    parced_person_photos_count = 0
     for photo_index in range(person_photos_count):
         if photo_index <= last_saved_photo_index:
+            parced_person_photos_count += 1
             continue
         if (photos_parced + 1) % 100 == 0:
             print(f"{photo_index} фотографий обработано....")
@@ -182,17 +177,17 @@ for person_id in range(1, max_iteration + 1):
             load_all_photos()
             photo_index -= 1
             continue
-        # wait.until(ec.element_to_be_clickable((By.ID, "pv_author_name")))
         photo = driver.find_element(by=By.ID, value="pv_photo")
         link = photo.find_element_by_tag_name("img").get_attribute("src")
 
         photos_parced += 1
         save_parced_pic(link)
         person_faces_count = find_and_save_faces(directory_for_saves, person_faces_count)
+        parced_person_photos_count += 1
         close_btn = driver.find_element(by=By.CLASS_NAME, value="pv_close_btn")
         close_btn.click()
         # driver.find_element(by=By.CLASS_NAME, value="pv_close_btn").click()
-    save_logs(saved_photos_count=get_saved_photos_count())
+    save_logs(saved_photos_count=parced_person_photos_count)
     file_with_link = open(f"{directory_for_saves}/link.txt", "w")
     file_with_link.write(f"https://vk.com/id{person_id}")
     file_with_link.close()
