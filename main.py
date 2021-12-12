@@ -80,20 +80,33 @@ def find_and_save_faces(person_photos_path, ind):
     return ind
 
 
+def save_logs(pers_id=None, photos_count=None, saved_photos_count=None):
+    with open("logs.txt", "a") as logs:
+        if pers_id and photos_count:
+            logs.write(f"{pers_id}: {photos_count} photos; ")
+        if saved_photos_count:
+            logs.write(f"{saved_photos_count} photos parced\n")
+
+
 def reload():
     global driver
-    print("_______\nПерезапускаемся...")
+    # print("_______\nПерезапускаемся...")
     driver.close()
-    print("Закрылся первый браузер.")
+    # print("Закрылся первый браузер.")
     driver.quit()
-    print("Вышли.")
-    print("Пытаемся открыть новый...")
+    # print("Вышли.")
+    # print("Пытаемся открыть новый...")
     driver = webdriver.Firefox(executable_path="geckodriver-v0.30.0-linux64/geckodriver")
-    print("Открыто!")
+    # print("Открыто!")
     driver.maximize_window()
     global wait
     wait = WebDriverWait(driver, 20)
-    print("Продолжаем работу...\n_______")
+    # print("Продолжаем работу...\n_______")
+
+
+def get_saved_photos_count():
+    with open("last_saved.txt", "r") as file:
+        return int(file.readlines()[-1].split()[-1]) + 1
 
 
 last_saved_person_id = -1
@@ -139,6 +152,7 @@ for person_id in range(1, max_iteration + 1):
         print("_" * 33)
         continue
     person_photos_count = int(driver.find_element(by=By.CLASS_NAME, value="ui_crumb_count").text.replace(" ", "").replace(",", ""))
+    save_logs(pers_id=person_id, photos_count=person_photos_count)
     print(f"Всего фоток: {[person_photos_count]}")
     load_all_photos()
 
@@ -152,23 +166,21 @@ for person_id in range(1, max_iteration + 1):
     for photo_index in range(person_photos_count):
         if photo_index <= last_saved_photo_index:
             continue
-        if photo_index % 100 == 0:
+        if (photos_parced + 1) % 100 == 0:
             print(f"{photo_index} фотографий обработано....")
             reload()
             driver.get(person_url)
+            all_photos = []
             load_all_photos()
         wait.until(ec.element_to_be_clickable((By.CLASS_NAME, "TopHomeLink")))
         all_photos[photo_index].click()
         try:
             wait.until(ec.element_to_be_clickable((By.ID, "pv_author_name")))
         except:
-            # os.remove(directory_for_saves)
-            # person_id -= 1
             reload()
             driver.get(person_url)
             load_all_photos()
             photo_index -= 1
-            print("Всё путём!")
             continue
         # wait.until(ec.element_to_be_clickable((By.ID, "pv_author_name")))
         photo = driver.find_element(by=By.ID, value="pv_photo")
@@ -180,6 +192,7 @@ for person_id in range(1, max_iteration + 1):
         close_btn = driver.find_element(by=By.CLASS_NAME, value="pv_close_btn")
         close_btn.click()
         # driver.find_element(by=By.CLASS_NAME, value="pv_close_btn").click()
+    save_logs(saved_photos_count=get_saved_photos_count())
     file_with_link = open(f"{directory_for_saves}/link.txt", "w")
     file_with_link.write(f"https://vk.com/id{person_id}")
     file_with_link.close()
