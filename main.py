@@ -92,7 +92,7 @@ def reload():
     global driver
     driver.close()
     driver.quit()
-    driver = webdriver.Firefox(executable_path="geckodriver-v0.30.0-linux64/geckodriver")
+    driver = webdriver.Firefox(executable_path="geckodriver_linux64/geckodriver")
     driver.maximize_window()
     global wait
     wait = WebDriverWait(driver, 20)
@@ -117,7 +117,7 @@ only_for_authorized = list()
 photos_parced = 0
 faces_parced = 0
 
-driver = webdriver.Firefox(executable_path="geckodriver-v0.30.0-linux64/geckodriver")
+driver = webdriver.Firefox(executable_path="geckodriver_linux64/geckodriver")
 driver.maximize_window()
 wait = WebDriverWait(driver, 20)
 
