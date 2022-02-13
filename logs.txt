@@ -1,6 +1,0 @@
-1: 239 photos; 239 photos parced
-5: 259 photos; 259 photos parced
-8: 120 photos; 120 photos parced
-11: 2444 photos; 2444 photos parced
-14: 17 photos; 17 photos parced
-17: 3465 photos; 
